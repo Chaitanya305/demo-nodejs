@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('git scm') {
+            steps {
+                git 'https://github.com/Chaitanya305/demo-nodejs.git'
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    withSonarQubeEnv('sonar') {
+                        // Run Sonar Scanner for Node.js project
+                        sh '''
+                        # Run the Sonar Scanner with Node.js-specific parameters
+                        npx sonar-scanner \
+                          -D sonar.projectKey=demo-nodejs \
+                          -D sonar.qualityProfile=Sonarway\
+                          -D sonar.language=js \
+                          -D sonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                          -D sonar.projectVersion=1.0.0 \
+                          -D sonar.sourceEncoding=UTF-8 \
+                          -D sonar.host.url=http://3.90.35.205:9000
+                        '''
+                    }
+                }
+            }
+        }
+        stage("SonarQube Quality Gate Check") {
+            steps {
+                script {
+                def qualityGate = waitForQualityGate()
+                    
+                    if (qualityGate.status != 'OK') {
+                        echo "${qualityGate.status}"
+                        error "Quality Gate failed: ${qualityGateStatus}"
+                    }
+                    else {
+                        echo "${qualityGate.status}"
+                        echo "SonarQube Quality Gates Passed"
+                    }
+                }
+            }
+        }
+    }
+    post {
+      always {
+        echo "Cleaning up ${WORKSPACE}"
+        // clean up our workspace 
+        deleteDir()
+        // clean up tmp directory 
+        dir("${workspace}@tmp") {
+          deleteDir()
+        }
+      }
+    }
+}
