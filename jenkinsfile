@@ -22,10 +22,17 @@ pipeline {
                           -D sonar.javascript.lcov.reportPaths=coverage/lcov.info \
                           -D sonar.projectVersion=1.0.0 \
                           -D sonar.sourceEncoding=UTF-8 \
-                          -D sonar.host.url=http://3.90.35.205:9000
+                          -D sonar.host.url=http://54.221.81.189:9000
                         '''
                     }
                 }
+            }
+        }
+        stage("seting QG"){
+            steps{
+                sh '''curl -u 48c2137c5b64a7c6c48e004971bf51a9a6fab6fc: http://54.221.81.189:9000/api/qualitygates/select \
+                -d "gateId=AZOu5sDnpQY_dtrYU4KY&projectKey=demo-nodejs"
+                '''
             }
         }
         stage("SonarQube Quality Gate Check") {
@@ -35,7 +42,7 @@ pipeline {
                     
                     if (qualityGate.status != 'OK') {
                         echo "${qualityGate.status}"
-                        error "Quality Gate failed: ${qualityGateStatus}"
+                        error "Quality Gate failed: ${qualityGate.status}"
                     }
                     else {
                         echo "${qualityGate.status}"
